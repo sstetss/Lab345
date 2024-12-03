@@ -1,0 +1,50 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+android {
+    namespace = "com.example.my_flutt_app"
+    compileSdk = flutter.compileSdkVersion
+    ndkVersion = flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+
+    defaultConfig {
+        applicationId = "com.example.my_flutt_app"
+        minSdk = flutter.minSdkVersion
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
+
+        // Видаляємо ndk.abiFilters, бо вони конфліктують із splits.abi.filters
+    }
+
+    splits {
+        abi {
+            enable true // Увімкнути поділ APK за ABI
+            reset()
+            include 'arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64' // Вказати необхідні ABI
+            universalApk false // Не створювати універсальний APK
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig = signingConfigs.debug // Для тестування. Для релізу замінити на ваш підпис.
+        }
+    }
+}
+
+flutter {
+    source = "../.."
+}
