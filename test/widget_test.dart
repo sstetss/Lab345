@@ -10,7 +10,7 @@ void main() {
     final sharedPreferences = await SharedPreferences.getInstance();
     final userRepository = UserRepository(sharedPreferences);
 
-    await tester.pumpWidget(MyApp(userRepository: userRepository));
+    await tester.pumpWidget(MyApp(userRepository: userRepository));  // Передаємо userRepository
 
     expect(find.text('0'), findsOneWidget);
     expect(find.text('1'), findsNothing);

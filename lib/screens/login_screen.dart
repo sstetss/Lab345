@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:lab3_new_app/repositories/user_repository.dart';
-import 'package:lab3_new_app/utils/dialog_utils.dart';
 import 'package:lab3_new_app/screens/home_screen.dart';
-import 'package:lab3_new_app/screens/registration_screen.dart'; // імпортуйте екран реєстрації
-import 'package:lab3_new_app/services/network_service.dart';
+import 'package:provider/provider.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -12,24 +9,25 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  bool _isLoading = false;
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  String? _errorMessage;
 
-  Future<void> _login() async {
-    setState(() {
-      _isLoading = true;
-    });
-
+  void _login() async {
     final email = _emailController.text;
     final password = _passwordController.text;
 
-    final userRepository = Provider.of<UserRepository>(context, listen: false);
-    final success = await userRepository.loginUser(email, password);
+    if (email.isEmpty || password.isEmpty) {
+      setState(() {
+        _errorMessage = 'Please enter email and password';
+      });
+      return;
+    }
 
-    setState(() {
-      _isLoading = false;
-    });
+    // Отримуємо UserRepository з контексту
+    final userRepository = Provider.of<UserRepository>(context, listen: false);
+
+    bool success = await userRepository.loginUser(email, password);
 
     if (success) {
       Navigator.pushReplacement(
@@ -37,7 +35,9 @@ class _LoginScreenState extends State<LoginScreen> {
         MaterialPageRoute(builder: (context) => HomeScreen()),
       );
     } else {
-      DialogUtils.showInfoDialog(context, 'Invalid credentials. Please try again.');
+      setState(() {
+        _errorMessage = 'Invalid login credentials';
+      });
     }
   }
 
@@ -58,22 +58,20 @@ class _LoginScreenState extends State<LoginScreen> {
               decoration: InputDecoration(labelText: 'Password'),
               obscureText: true,
             ),
-            SizedBox(height: 20),
+            if (_errorMessage != null)
+              Text(_errorMessage!, style: TextStyle(color: Colors.red)),
+            SizedBox(height: 16),
             ElevatedButton(
-              onPressed: _isLoading ? null : _login,
-              child: _isLoading ? CircularProgressIndicator() : Text('Login'),
+              onPressed: _login,
+              child: Text('Login'),
             ),
-            SizedBox(height: 20),
+            SizedBox(height: 16),
+            // Кнопка для переходу на екран реєстрації
             TextButton(
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => RegistrationScreen(userRepository: Provider.of<UserRepository>(context, listen: false)),
-                  ),
-                );
+                Navigator.pushNamed(context, '/register'); // Використовуємо named route
               },
-              child: Text('Don\'t have an account? Register here'),
+              child: Text('Don\'t have an account? Register'),
             ),
           ],
         ),
