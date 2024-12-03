@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import '../repositories/user_repository.dart';
-import '../utils/validators.dart';
+import 'package:lab3_new_app/repositories/user_repository.dart';
+import 'package:lab3_new_app/screens/home_screen.dart';
+import 'package:provider/provider.dart';
 
 class LoginScreen extends StatefulWidget {
-  final UserRepository userRepository;
-
-  const LoginScreen({Key? key, required this.userRepository}) : super(key: key);
-
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  _LoginScreenState createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
@@ -20,17 +17,27 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = _emailController.text;
     final password = _passwordController.text;
 
-    if (!isValidEmail(email)) {
-      setState(() => _errorMessage = 'Invalid email address');
+    if (email.isEmpty || password.isEmpty) {
+      setState(() {
+        _errorMessage = 'Please enter email and password';
+      });
       return;
     }
 
-    final success = await widget.userRepository.loginUser(email, password);
+    // Отримуємо UserRepository з контексту
+    final userRepository = Provider.of<UserRepository>(context, listen: false);
+
+    bool success = await userRepository.loginUser(email, password);
 
     if (success) {
-      Navigator.pushNamed(context, '/home');
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomeScreen()),
+      );
     } else {
-      setState(() => _errorMessage = 'Incorrect email or password');
+      setState(() {
+        _errorMessage = 'Invalid login credentials';
+      });
     }
   }
 
@@ -51,9 +58,21 @@ class _LoginScreenState extends State<LoginScreen> {
               decoration: InputDecoration(labelText: 'Password'),
               obscureText: true,
             ),
-            if (_errorMessage != null) Text(_errorMessage!, style: TextStyle(color: Colors.red)),
+            if (_errorMessage != null)
+              Text(_errorMessage!, style: TextStyle(color: Colors.red)),
             SizedBox(height: 16),
-            ElevatedButton(onPressed: _login, child: Text('Login')),
+            ElevatedButton(
+              onPressed: _login,
+              child: Text('Login'),
+            ),
+            SizedBox(height: 16),
+            // Кнопка для переходу на екран реєстрації
+            TextButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/register'); // Використовуємо named route
+              },
+              child: Text('Don\'t have an account? Register'),
+            ),
           ],
         ),
       ),

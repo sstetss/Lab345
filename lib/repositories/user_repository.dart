@@ -1,40 +1,47 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import 'base_user_repository.dart';
 
-class UserRepository extends BaseUserRepository {
-  final SharedPreferences _prefs;
+class UserRepository {
+  final SharedPreferences _sharedPreferences;
 
-  UserRepository(this._prefs);
+  UserRepository(this._sharedPreferences);
 
-  @override
-  Future<void> registerUser(String email, String password, String name) async {
-    await _prefs.setString('email', email);
-    await _prefs.setString('password', password);
-    await _prefs.setString('name', name);
+  // Метод для перевірки, чи користувач вже авторизований
+  Future<bool> checkIfLoggedIn() async {
+    final email = _sharedPreferences.getString('email');
+    final password = _sharedPreferences.getString('password');
+    return email != null && password != null;
   }
 
-  @override
+  // Метод для логіну
   Future<bool> loginUser(String email, String password) async {
-    final storedEmail = _prefs.getString('email');
-    final storedPassword = _prefs.getString('password');
-    return storedEmail == email && storedPassword == password;
+    // Імітуємо перевірку користувача на сервері
+    final success = true; // Якщо все успішно, повертаємо true
+    if (success) {
+      await _sharedPreferences.setString('email', email);
+      await _sharedPreferences.setString('password', password);
+    }
+    return success;
   }
 
-  @override
-  Future<Map<String, String>> getUserData() async {
-    return {
-      'email': _prefs.getString('email') ?? '',
-      'name': _prefs.getString('name') ?? '',
-    };
+  // Метод для реєстрації користувача
+  Future<void> registerUser(String email, String password, String name) async {
+    // Перевірка чи вже є зареєстрований користувач
+    final existingEmail = _sharedPreferences.getString('email');
+    if (existingEmail != null) {
+      throw Exception('User already registered');
+    }
+
+    // Імітуємо реєстрацію (можна додати додаткову логіку)
+    await _sharedPreferences.setString('email', email);
+    await _sharedPreferences.setString('password', password);
+    await _sharedPreferences.setString('name', name);
   }
 
-  @override
-  Future<void> updateUserData(Map<String, String> newData) async {
-    await _prefs.setString('name', newData['name'] ?? '');
-  }
-
-  @override
-  Future<void> deleteUser() async {
-    await _prefs.clear();
+  // Метод для виходу
+  Future<void> logoutUser() async {
+    await _sharedPreferences.remove('email');
+    await _sharedPreferences.remove('password');
+    await _sharedPreferences.remove('name'); // Видалення імені також
   }
 }
+

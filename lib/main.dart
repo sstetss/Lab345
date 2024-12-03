@@ -1,34 +1,58 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:lab3_new_app/repositories/user_repository.dart';
+import 'package:lab3_new_app/services/network_service.dart'; // Додаємо NetworkService
+import 'package:lab3_new_app/screens/home_screen.dart';
+import 'package:lab3_new_app/screens/login_screen.dart';
+import 'package:lab3_new_app/screens/registration_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'screens/login_screen.dart';
-import 'screens/registration_screen.dart';
-import 'screens/home_screen.dart';
-import 'repositories/user_repository.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  final prefs = await SharedPreferences.getInstance();
-  final userRepository = UserRepository(prefs);
-
-  runApp(MyApp(userRepository: userRepository));
+void main() {
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  final UserRepository userRepository;
-
-  const MyApp({Key? key, required this.userRepository}) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Lab 3 App',
+      title: 'Flutter Flights',
       theme: ThemeData(primarySwatch: Colors.blue),
-      initialRoute: '/login',
-      routes: {
-        '/login': (context) => LoginScreen(userRepository: userRepository),
-        '/register': (context) => RegistrationScreen(userRepository: userRepository),
-        '/home': (context) => HomeScreen(userRepository: userRepository),
-      },
+      home: FutureBuilder<SharedPreferences>(
+        future: SharedPreferences.getInstance(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Scaffold(
+              body: Center(child: CircularProgressIndicator()), // Показуємо спинер під час завантаження SharedPreferences
+            );
+          }
+
+          if (snapshot.hasError) {
+            return Scaffold(
+              body: Center(child: Text('Error loading preferences')),
+            );
+          }
+
+          final prefs = snapshot.data;
+
+          return MultiProvider(
+            providers: [
+              // Додаємо провайдери
+              Provider(create: (_) => UserRepository(prefs!)),
+              Provider(create: (_) => NetworkService()), // Додаємо NetworkService
+            ],
+            child: MaterialApp(
+              title: 'Flutter Flights',
+              theme: ThemeData(primarySwatch: Colors.blue),
+              home: LoginScreen(), // Початковий екран
+              routes: {
+                '/register': (context) => RegistrationScreen(
+                  userRepository: Provider.of<UserRepository>(context, listen: false), // Передаємо UserRepository на екран реєстрації
+                ),
+              },
+            ),
+          );
+        },
+      ),
     );
   }
 }

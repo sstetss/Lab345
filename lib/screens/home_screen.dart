@@ -1,68 +1,66 @@
 import 'package:flutter/material.dart';
-import '../repositories/user_repository.dart';
+import 'package:provider/provider.dart';
+import 'package:lab3_new_app/services/network_service.dart';
+import 'package:lab3_new_app/screens/flight_details_screen.dart'; // Для деталів рейсу
+import 'package:lab3_new_app/repositories/user_repository.dart'; // Для виходу
+import 'package:lab3_new_app/screens/login_screen.dart'; // Додаємо імпорт LoginScreen
 
 class HomeScreen extends StatefulWidget {
-  final UserRepository userRepository;
-
-  const HomeScreen({Key? key, required this.userRepository}) : super(key: key);
-
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  _HomeScreenState createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late Future<Map<String, String>> _userData;
-
-  @override
-  void initState() {
-    super.initState();
-    _userData = widget.userRepository.getUserData();
-  }
-
-  void _logout() async {
-    await widget.userRepository.deleteUser();
-    Navigator.pushReplacementNamed(context, '/login');
-  }
-
-  void _editData() async {
-    // Простий приклад редагування імені
-    await widget.userRepository.updateUserData({'name': 'Updated Name'});
-    setState(() {
-      _userData = widget.userRepository.getUserData();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
+    final networkService = Provider.of<NetworkService>(context);
+    final userRepository = Provider.of<UserRepository>(context, listen: false);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Home'),
+        title: Text('Flights from Poland'),
         actions: [
-          IconButton(onPressed: _logout, icon: Icon(Icons.logout)),
+          IconButton(
+            icon: Icon(Icons.logout),
+            onPressed: () async {
+              await userRepository.logoutUser();
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => LoginScreen()), // Тепер екран логіну доступний
+              );
+            },
+          ),
         ],
       ),
-      body: FutureBuilder<Map<String, String>>(
-        future: _userData,
+      body: FutureBuilder<List<dynamic>>(
+        future: networkService.fetchFlights(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error loading user data'));
-          } else {
-            final data = snapshot.data!;
-            return Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Name: ${data['name']}'),
-                  Text('Email: ${data['email']}'),
-                  SizedBox(height: 16),
-                  ElevatedButton(onPressed: _editData, child: Text('Edit Data')),
-                ],
-              ),
-            );
           }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          final flights = snapshot.data ?? [];
+
+          return ListView.builder(
+            itemCount: flights.length,
+            itemBuilder: (context, index) {
+              final flight = flights[index];
+              return ListTile(
+                title: Text('Flight to ${flight['destination']}'),
+                subtitle: Text('Price: \$${flight['price']}'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => FlightDetailsScreen(flight: flight),
+                    ),
+                  );
+                },
+              );
+            },
+          );
         },
       ),
     );
