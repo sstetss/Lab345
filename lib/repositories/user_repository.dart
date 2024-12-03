@@ -11,13 +11,26 @@ class UserRepository extends BaseUserRepository {
     await _prefs.setString('email', email);
     await _prefs.setString('password', password);
     await _prefs.setString('name', name);
+    await _prefs.setBool('isLoggedIn', true);
   }
 
   @override
   Future<bool> loginUser(String email, String password) async {
     final storedEmail = _prefs.getString('email');
     final storedPassword = _prefs.getString('password');
-    return storedEmail == email && storedPassword == password;
+    final success = storedEmail == email && storedPassword == password;
+    if (success) {
+      await _prefs.setBool('isLoggedIn', true);
+    }
+    return success;
+  }
+
+  Future<bool> isLoggedIn() async {
+    return _prefs.getBool('isLoggedIn') ?? false;
+  }
+
+  Future<void> logoutUser() async {
+    await _prefs.setBool('isLoggedIn', false);
   }
 
   @override
@@ -30,7 +43,12 @@ class UserRepository extends BaseUserRepository {
 
   @override
   Future<void> updateUserData(Map<String, String> newData) async {
-    await _prefs.setString('name', newData['name'] ?? '');
+    if (newData.containsKey('email')) {
+      await _prefs.setString('email', newData['email']!);
+    }
+    if (newData.containsKey('name')) {
+      await _prefs.setString('name', newData['name']!);
+    }
   }
 
   @override
